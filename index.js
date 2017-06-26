@@ -17,7 +17,15 @@ maps.distanceMatrix(options, (error, response) => {
 });
 
 function handleResponse(response) {
-  log(response.json);
+  const {json} = response;
+  const origin = json.origin_addresses[0];
+  const destination = json.destination_addresses[0];
+  const duration = getTrafficDurationSec(json);
+  log({origin, destination, duration});
+}
+
+function getTrafficDurationSec(json) {
+  return json.rows[0].elements[0].duration_in_traffic.value;
 }
 
 function log(obj) {

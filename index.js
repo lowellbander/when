@@ -1,24 +1,23 @@
 const util = require('util');
 
-process.argv.forEach(function (val, index, array) {
-  console.log(index + ': ' + val);
-});
-
 const key = process.argv[2];
+const origins = process.argv[3];
+const destinations = process.argv[4];
+
+const departure_time = new Date().getTime();
+
+const options = {origins, destinations, departure_time};
 
 const maps = require('@google/maps').createClient({key});
 
-maps.distanceMatrix({
-  origins: ['Hornsby Station, NSW', 'Chatswood Station, NSW'],
-  destinations: ['Central Station, NSW', 'Parramatta Station, NSW'],
-}, (error, response) => {
+maps.distanceMatrix(options, (error, response) => {
   error
     ? console.log({error})
     : handleResponse(response);
 });
 
 function handleResponse(response) {
-  log(response);
+  log(response.json);
 }
 
 function log(obj) {

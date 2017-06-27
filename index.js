@@ -9,18 +9,20 @@ const {
   departure_time,
 } = getArgs();
 
+const dateFormat = require('dateformat');
 const maps = require('@google/maps').createClient({key});
 const plotly = require('plotly')(plotlyUsername, plotlyKey);
 const util = require('util');
 const distanceMatrix = util.promisify(maps.distanceMatrix);
 
 const SEC_PER_MIN = 60;
+const MS_PER_SEC = 1000;
 
 let times;
 
 function main() {
   const departure_time = getTomorrowMidnight().getTime();
-  const intervalLength = 30 * SEC_PER_MIN;
+  const intervalLength = 30 * SEC_PER_MIN * MS_PER_SEC;
   times = getRange(departure_time, intervalLength, 10);
 
   const queries = times.map(departure_time =>
@@ -30,11 +32,19 @@ function main() {
     const durations = responses.map(
       response => getTrafficDurationSec(response.json),
     );
-    times = times.map((time, index) => {
-      return {time, duration: durations[index]};
+    const dataPoints = times.map((time, index) => {
+      const timestamp = dateFormat(
+        new Date(time),
+        'dddd, mmmm dS, yyyy, h:MM:ss TT',
+      );
+      return {timestamp, duration: durations[index] / SEC_PER_MIN};
     });
-    log({times});
+    log({dataPoints});
   });
+}
+
+function dataPointsToXY(dataPoints) {
+  // TODO
 }
 
 function getRange(startTime, intervalLength, nIntervals) {
@@ -84,16 +94,22 @@ function getArgs() {
   };
 }
 
-// var data = [
-//   {
-//     x: ["2013-10-04 22:23:00", "2013-11-04 22:23:00", "2013-12-04 22:23:00"],
-//     y: [1, 3, 6],
-//     type: 'scatter',
-//   }
-// ];
-// var graphOptions = {filename: "date-axes", fileopt: "overwrite"};
-// plotly.plot(data, graphOptions, function (err, msg) {
-//     console.log(msg);
-// });
+function makePlot(xValues, yValues)  {
+  var data = [
+    {
+      x: xValues,
+      y: yValues,
+      // x: ["2013-10-04 22:23:00", "2013-11-04 22:23:00", "2013-12-04 22:23:00"],
+      // y: [1, 3, 6],
+      type: 'scatter',
+    }
+  ];
+  const options = {filename: "date-axes", fileopt: "overwrite"};
+  plotly.plot(data, options, (err, msg) => {
+    err
+      ? log({err})
+      : log({msg});
+  });
+}
 
 main();

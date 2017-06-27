@@ -18,6 +18,7 @@
   "homepage": "https://github.com/lowellbander/when#readme",
   "dependencies": {
     "@google/maps": "^0.4.1",
+    "dateformat": "^2.0.0",
     "plotly": "^1.0.6"
   }
 }

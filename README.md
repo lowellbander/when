@@ -10,3 +10,4 @@
      filename: 'date-axes',
      error: '' } }
 ```
+![plot](plot.png)

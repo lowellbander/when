@@ -5,12 +5,12 @@ const {
   plotlyUsername,
   destinations,
   origins,
-  key,
+  googleMapsKey,
   departure_time,
 } = getArgs();
 
 const dateFormat = require('dateformat');
-const maps = require('@google/maps').createClient({key});
+const maps = require('@google/maps').createClient({key: googleMapsKey});
 const plotly = require('plotly')(plotlyUsername, plotlyKey);
 const util = require('util');
 const distanceMatrix = util.promisify(maps.distanceMatrix);
@@ -28,20 +28,19 @@ function main() {
   const queries = times.map(departure_time =>
     distanceMatrix({origins, destinations, departure_time}),
   );
-  Promise.all(queries).then(responses => {
-    const durations = responses.map(
-      response => getTrafficDurationSec(response.json),
-    );
-    const dataPoints = times.map((time, index) => {
-      const timestamp = dateFormat(
-        new Date(time),
-        'h:MM:ss TT',
-      );
-      return {timestamp, duration: durations[index] / SEC_PER_MIN};
-    });
-    const {x, y} = dataPointsToXY(dataPoints);
-    makePlot(x, y)  ;
+  Promise.all(queries).then(processResponses);
+}
+
+function processResponses(responses) {
+  const durations = responses.map(_ => getTrafficDurationSec(_.json));
+  const dataPoints = times.map((time, index) => {
+    return {
+      timestamp: dateFormat(new Date(time), 'h:MM:ss TT'),
+      duration: durations[index] / SEC_PER_MIN,
+    };
   });
+  const {x, y} = dataPointsToXY(dataPoints);
+  makePlot(x, y)  ;
 }
 
 function dataPointsToXY(dataPoints) {
@@ -70,14 +69,6 @@ function getTomorrowMidnight() {
   return d;
 }
 
-function handleResponse(response) {
-  const {json} = response;
-  const origin = json.origin_addresses[0];
-  const destination = json.destination_addresses[0];
-  const duration = getTrafficDurationSec(json);
-  log({origin, destination, duration});
-}
-
 function getTrafficDurationSec(json) {
   return json.rows[0].elements[0].duration_in_traffic.value;
 }
@@ -91,13 +82,13 @@ function getArgs() {
   const plotlyUsername = process.argv.pop();
   const destinations = process.argv.pop();
   const origins = process.argv.pop();
-  const key = process.argv.pop();
+  const googleMapsKey = process.argv.pop();
   return {
     plotlyKey,
     plotlyUsername,
     destinations,
     origins,
-    key,
+    googleMapsKey,
   };
 }
 

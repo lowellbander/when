@@ -12,13 +12,38 @@ const {
 const maps = require('@google/maps').createClient({key});
 const plotly = require('plotly')(plotlyUsername, plotlyKey);
 const util = require('util');
+const distanceMatrix = util.promisify(maps.distanceMatrix);
+
+const SEC_PER_MIN = 60;
+
+let times;
 
 function main() {
-  const departure_time = getTomorrowMidnight();
-  const options = {origins, destinations, departure_time};
-  const distanceMatrix = util.promisify(maps.distanceMatrix);
+  const departure_time = getTomorrowMidnight().getTime();
+  const intervalLength = 30 * SEC_PER_MIN;
+  times = getRange(departure_time, intervalLength, 10);
 
-  distanceMatrix(options).then(handleResponse).catch(log);
+  const queries = times.map(departure_time =>
+    distanceMatrix({origins, destinations, departure_time}),
+  );
+  Promise.all(queries).then(responses => {
+    const durations = responses.map(
+      response => getTrafficDurationSec(response.json),
+    );
+    times = times.map((time, index) => {
+      return {time, duration: durations[index]};
+    });
+    log({times});
+  });
+}
+
+function getRange(startTime, intervalLength, nIntervals) {
+  const range = [];
+  while (nIntervals > 0) {
+    range.push(startTime += intervalLength);
+    --nIntervals;
+  }
+  return range;
 }
 
 function getTomorrowMidnight() {

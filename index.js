@@ -14,10 +14,18 @@ const plotly = require('plotly')(plotlyUsername, plotlyKey);
 const util = require('util');
 
 function main() {
+  const departure_time = getTomorrowMidnight();
   const options = {origins, destinations, departure_time};
   const distanceMatrix = util.promisify(maps.distanceMatrix);
 
   distanceMatrix(options).then(handleResponse).catch(log);
+}
+
+function getTomorrowMidnight() {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  d.setHours(0, 0, 0, 0);
+  return d;
 }
 
 function handleResponse(response) {
@@ -42,14 +50,12 @@ function getArgs() {
   const destinations = process.argv.pop();
   const origins = process.argv.pop();
   const key = process.argv.pop();
-  const departure_time = new Date().getTime();
   return {
     plotlyKey,
     plotlyUsername,
     destinations,
     origins,
     key,
-    departure_time,
   };
 }
 
